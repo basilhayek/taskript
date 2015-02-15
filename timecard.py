@@ -24,32 +24,40 @@ def timecardToClipboard(weekEnding):
     copyToClipboard(timecard)
 
 def updateValues(timecard, parser):
-     dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] 
-     for day in dow:
-         dayHours = parser.get('Tracking', day)
-         timecard = timecard.replace('<' + day.upper() + '>', dayHours)
-     return timecard
+    #TODO: P3 - Fix this to be dynamic
+    sites = ['Client','Work']    
+    for site in sites:
+        dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        for day in dow:
+            dayHours = parser.get('Tracking.' + site, day)
+            timecard = timecard.replace('<' + day.upper() + '>', dayHours)
+    return timecard
 
-def saveTimecard(weekEnding):
+def getWeekEnding(weekContaining, dow):
+    weekEnding = weekContaining + timedelta( (dow-weekContaining.weekday()) % 7 )
+    return weekEnding
+
+def saveTimecard(weekContaining, parser):
+    weekEnding = getWeekEnding(weekContaining, 6).strftime("%Y-%m-%d")
     fileName = 'TimeCard-' + weekEnding + '.txt'
     fileIn = open('.//data//TimeCardTemplate125474.txt', 'r')
-    timecard = updateValues(fileIn.read())
+    timecard = updateValues(fileIn.read(), parser)
     date = datetime.strptime(weekEnding, "%Y-%m-%d")
     timecard = timecard.replace('<WE:DD-Mmm-YYYY>', date.strftime('%d-%b-%Y'))
     fileOut = open('.//data//' + fileName, 'w')
     fileOut.write(timecard)
 
 def submitTimecard(currentLocation, parser):
-    nextSubmit = datetime.strptime(parser.get('Tracking','week'), '%Y-%m-%d')  
+    nextSubmit = datetime.strptime(parser.get('Tracking','week'), '%Y-%m-%d') 
 
     timecardURL = 'http://timetracking/upload.aspx'
     if currentLocation == 'home':
         timecardURL = 'https://us.webvpn.sapient.com/,DanaInfo=timetracking+Upload.aspx'
-    
+   
     timecardToClipboard(nextSubmit.strftime('%Y-%m-%d'))
-    
+   
     nextSubmit = nextSubmit + timedelta(days=7)
-    workclock.updateTracking(nextSubmit, parser)        
-    
+    workclock.updateTracking(nextSubmit, parser)       
+   
     webbrowser.open(timecardURL)
     # TODO: P3: Rollover to history

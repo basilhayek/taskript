@@ -6,34 +6,43 @@ Created on Thu Feb 12 21:35:21 2015
 """
 
 from datetime import datetime
+import timecard
 
 def updateTracking(nextSubmit, parser):
     parser.set('Pytask','lastAction','updateTracking()')
     parser.set('Tracking', 'week', nextSubmit.strftime('%Y-%m-%d'))
-    dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] 
-    for day in dow:
-        parser.set('Tracking',day,str(0))
 
-def trackHours(startWorkTime, numHours, parser):
-    parser.set('Tracking',startWorkTime.strftime("%A")[0:3], str(numHours))
+    #TODO: P3 - Fix this to be dynamic
+    sites = ['Client','Work']    
+    for site in sites:
+        dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        for day in dow:
+            parser.set('Tracking.' + site,day,str(0))
 
-def startWorkClock(currentTime, parser):
-    parser.set('Pytask','lastAction','startWorkClock()')
-    parser.set('Work', 'start', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
-    parser.set('Work', 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
-    parser.remove_option('Work', 'stop')
+def trackHours(location, startWorkTime, numHours, parser):
+    parser.set('Tracking.' + location,startWorkTime.strftime("%A")[0:3], str(numHours))
+    timecard.saveTimecard(startWorkTime, parser)
 
-def stopWorkClock(parser):
-    parser.set('Pytask','lastAction','stopWorkClock()')
-    strTemp = parser.get('Work', 'last')
-    parser.set('Work', 'stop', strTemp)
+def pingClock(location, currentTime, parser):
+    parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+
+def startClock(location, currentTime, parser):
+    parser.set('Pytask','lastAction','startClock(' + location + ')')
+    parser.set('Tracking.' + location, 'start', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+    parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+    parser.remove_option('Tracking.' + location, 'stop')
+
+def stopClock(location, parser):
+    parser.set('Pytask','lastAction','stopClock()')
+    strTemp = parser.get('Tracking.' + location, 'last')
+    parser.set('Tracking.' + location, 'stop', strTemp)
     stopWorkTime = datetime.strptime(strTemp, "%Y-%m-%d %H:%M:%S")
-    startWorkTime = datetime.strptime(parser.get('Work', 'start'),"%Y-%m-%d %H:%M:%S")
-    dtDelta = stopWorkTime - startWorkTime    
+    startWorkTime = datetime.strptime(parser.get('Tracking.' + location, 'start'),"%Y-%m-%d %H:%M:%S")
+    dtDelta = stopWorkTime - startWorkTime   
     numHours = round((2 * dtDelta.seconds / 60 / 60),0) / 2
-    trackHours(startWorkTime, numHours, parser)
+    trackHours(location, startWorkTime, numHours, parser)
 
-def lapWorkClock(currentTime, parser):
-    stopWorkClock(parser)
-    startWorkClock(currentTime, parser)
+def lapClock(location, currentTime, parser):
+    stopClock(location, parser)
+    startClock(location, currentTime, parser)
     

@@ -10,71 +10,82 @@ from datetime import datetime
 import workclock
 import timecard
 
+def isTrackedLocation(location, parser):
+    return parser.getboolean('Location', 'Track.' + location)
+
 def getIPOctets(ipAddress, numOctets):
     if numOctets == 4:
         return ipAddress
     posDot = 0
-    for i in range (0, numOctets):
-        posDot = ipAddress.find('.', posDot + 1) 
+    for i in range(0, numOctets):
+        posDot = ipAddress.find('.', posDot + 1)
     strAddress = ipAddress[0:posDot]
     return strAddress
 
-def weekChange(currentTime, parser):
-    nextSubmit = datetime.strptime(parser.get('Tracking','week'), '%Y-%m-%d')  
-    if currentTime > nextSubmit:
-        return True
-
 def locationChange(currentLocation, parser):
-    lastLocation = parser.get('Pytask','lastLocation')
+    locChangeType = 0
+    lastLocation = parser.get('Pytask', 'lastLocation')
     if (currentLocation != 'ignore') and (lastLocation != currentLocation):
-        return True
-        
+        locChangeType = 1
+    if isTrackedLocation(lastLocation, parser):
+        locChangeType = locChangeType | 2
+    if isTrackedLocation(currentLocation, parser):
+        locChangeType = locChangeType | 4
+    return locChangeType
+
 def dateChange(currentTime, parser):
-    lastTime = datetime.strptime(parser.get('Pytask', 'lastrun'), "%Y-%m-%d %H:%M:%S")
+    dateChangeType = 0
+    lastTime = datetime.strptime(parser.get('Pytask', 'lastrun'),
+                                 "%Y-%m-%d %H:%M:%S")
     if lastTime.date() != currentTime.date():
-        return True
+        dateChangeType = 1
+        nextSubmit = datetime.strptime(parser.get('Tracking', 'week'),
+                                       '%Y-%m-%d')
+        if currentTime > nextSubmit:
+            dateChangeType = dateChangeType | 2
+    return dateChangeType
+
 
 def handleContextChange(changeType, currentLocation, currentTime, parser):
     # Handle location changes
+
+    trackLocation = parser.getboolean("Location", "Track." + currentLocation)
+    lastLocation = parser.get("Pytask", "lastLocation")
     if changeType & 1 == 1:
-        # At work, coming from somewhere different, so start the clock
-        if currentLocation == 'Work':
-            workclock.startWorkClock(currentTime, parser)
-        # Got home from work, stop the work clock and record the time
-        if currentLocation == 'Home':
-            workclock.stopWorkClock(parser)
-    
+        # We have changed locations, and need to track the current location
+        if trackLocation:
+            workclock.stopClock(lastLocation, parser)
+            workclock.startClock(currentLocation, currentTime, parser)
+        # Changed locations, but no need to track the current location
+        else:
+            workclock.stopClock(lastLocation, parser)
+
     # Handle date rollover at work
-    if changeType & 2 == 2:
-        # This only matters if at work
-        if currentLocation == 'Work':
-            workclock.lapWorkClock(currentTime, parser)
-            
+    if changeType & 16 == 16:
+        # This only matters if we're at a place where we should track time
+        if trackLocation:
+            workclock.lapClock(currentLocation, currentTime, parser)
+
     # Handle time card submission
-    if changeType & 4 == 4:
+    if changeType & 32 == 32:
         timecard.submitTimecard(currentLocation, parser)
 
 def contextChange(currentLocation, currentTime, parser):
-    changeType = 0
-    if locationChange(currentLocation, parser):
-        changeType = 1
-    if dateChange(currentTime, parser):
-        changeType = changeType + 2
-    if weekChange(currentTime, parser):
-        changeType = changeType + 4
-    parser.set('Pytask','lastAction','contextChange()=' + str(changeType))
+    changeType = locationChange(currentLocation, parser)
+    changeType = changeType | (dateChange(currentTime, parser) << 4)
+    parser.set('Pytask', 'lastAction', 'contextChange()=' + str(changeType))
     return changeType
 
 def getCurrentLocation(parser):
     currentIP = socket.gethostbyname(socket.gethostname())
     matchIP = getIPOctets(currentIP, 2)
-    currentLocation = parser.get('Location',matchIP)
+    currentLocation = parser.get('IPMapping',matchIP)
     return currentLocation
 
 def updateConfig(currentTime, currentLocation, parser):
     strTime = currentTime.strftime("%Y-%m-%d %H:%M:%S")
     parser.set('Pytask', 'lastRun', strTime)
     parser.set('Pytask', 'lastLocation', currentLocation)
-    if currentLocation == 'Work':
-        parser.set(currentLocation, 'last', strTime)
+    if isTrackedLocation(currentLocation, parser):
+        workclock.pingClock(currentLocation, currentTime, parser)
     parser.write(open('taskript.ini', 'w'))
