@@ -41,7 +41,7 @@ def dateChange(currentTime, parser):
         dateChangeType = 1
         nextSubmit = datetime.strptime(parser.get('Tracking', 'week'),
                                        '%Y-%m-%d')
-        if currentTime > nextSubmit:
+        if currentTime.date() > nextSubmit.date():
             dateChangeType = dateChangeType | 2
     return dateChangeType
 

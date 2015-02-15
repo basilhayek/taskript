@@ -26,20 +26,23 @@ class TestTskript(unittest.TestCase):
     def test_contextChangeW2H(self)        :
         self.parser.set("Pytask","lastlocation","work")
         currentLocation = "home"
+        checkFlag = 1 + 2
         changeType = tskript.contextChange(currentLocation, self.currentTime, self.parser)
-        self.assertEquals(changeType, 1 + 2)
+        self.assertEquals(changeType & checkFlag, checkFlag)
 
     def test_contextChangeH2W(self)        :
         self.parser.set("Pytask","lastlocation","home")
         currentLocation = "work"
+        checkFlag = 1 + 4
         changeType = tskript.contextChange(currentLocation, self.currentTime, self.parser)
-        self.assertEquals(changeType, 1 + 4)
+        self.assertEquals(changeType & checkFlag, checkFlag)
 
     def test_contextChangeC2W(self)        :
         self.parser.set("Pytask","lastlocation","client")
         currentLocation = "work"
+        checkFlag = 1 + 2 + 4
         changeType = tskript.contextChange(currentLocation, self.currentTime, self.parser)
-        self.assertEquals(changeType, 1 + 2 + 4)
+        self.assertEquals(changeType & checkFlag, checkFlag)
         
     def test_dateChangeSameDate(self):
         self.parser.set("Pytask","lastrun",self.currentTime.strftime("%Y-%m-%d %H:%M:%S"))
@@ -52,6 +55,10 @@ class TestTskript(unittest.TestCase):
         changeType = tskript.dateChange(self.currentTime, self.parser)        
         self.assertEquals(changeType, 1)
        
+    def test_weekEnding(self):
+        dateSaturday = datetime.strptime("2/14/2015 10:12:45","%m/%d/%Y %H:%M:%S")
+        self.assertEquals(timecard.getWeekEnding(dateSaturday, 6), dateSaturday.date() + timedelta(days=1))
+
     def test_dateChangeDiffWeek(self):
         lastTime = self.currentTime + timedelta(days=-1)
         self.parser.set("Pytask","lastrun",lastTime.strftime("%Y-%m-%d %H:%M:%S"))
@@ -69,8 +76,7 @@ class TestTskript(unittest.TestCase):
         hours = self.parser.getfloat('Tracking.' + location, self.currentTime.strftime("%A")[0:3])
         self.assertEqual(hours, 2.0)
         
-    def test_weekEnding(self):
-        self.assertEquals(timecard.getWeekEnding(self.currentTime, 6), self.currentTime + timedelta(days=1))
+        
         
         
 

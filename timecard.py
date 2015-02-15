@@ -35,7 +35,7 @@ def updateValues(timecard, parser):
 
 def getWeekEnding(weekContaining, dow):
     weekEnding = weekContaining + timedelta( (dow-weekContaining.weekday()) % 7 )
-    return weekEnding
+    return weekEnding.date()
 
 def saveTimecard(weekContaining, parser):
     weekEnding = getWeekEnding(weekContaining, 6).strftime("%Y-%m-%d")
@@ -51,7 +51,7 @@ def submitTimecard(currentLocation, parser):
     nextSubmit = datetime.strptime(parser.get('Tracking','week'), '%Y-%m-%d') 
 
     timecardURL = 'http://timetracking/upload.aspx'
-    if currentLocation == 'home':
+    if currentLocation == 'Home':
         timecardURL = 'https://us.webvpn.sapient.com/,DanaInfo=timetracking+Upload.aspx'
    
     timecardToClipboard(nextSubmit.strftime('%Y-%m-%d'))
@@ -60,4 +60,3 @@ def submitTimecard(currentLocation, parser):
     workclock.updateTracking(nextSubmit, parser)       
    
     webbrowser.open(timecardURL)
-    # TODO: P3: Rollover to history
