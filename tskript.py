@@ -27,10 +27,10 @@ def locationChange(currentLocation, parser):
     lastLocation = parser.get('Pytask', 'lastLocation')
     if (currentLocation != 'ignore') and (lastLocation != currentLocation):
         locChangeType = 1
-    if isTrackedLocation(lastLocation, parser):
-        locChangeType = locChangeType | 2
-    if isTrackedLocation(currentLocation, parser):
-        locChangeType = locChangeType | 4
+        if isTrackedLocation(lastLocation, parser):
+            locChangeType = locChangeType | 2
+        if isTrackedLocation(currentLocation, parser):
+            locChangeType = locChangeType | 4
     return locChangeType
 
 def dateChange(currentTime, parser):
@@ -49,21 +49,22 @@ def dateChange(currentTime, parser):
 def handleContextChange(changeType, currentLocation, currentTime, parser):
     # Handle location changes
 
-    trackLocation = parser.getboolean("Location", "Track." + currentLocation)
     lastLocation = parser.get("Pytask", "lastLocation")
+    trackCurrLocation = parser.getboolean("Location", "Track." + currentLocation)
+    trackLastLocation = parser.getboolean("Location", "Track." + lastLocation)
     if changeType & 1 == 1:
-        # We have changed locations, and need to track the current location
-        if trackLocation:
+        # If we were tracking the last location, stop it
+        if trackLastLocation:
             workclock.stopClock(lastLocation, parser)
+            
+        # If we are tracking the new location, start it
+        if trackCurrLocation:
             workclock.startClock(currentLocation, currentTime, parser)
-        # Changed locations, but no need to track the current location
-        else:
-            workclock.stopClock(lastLocation, parser)
 
     # Handle date rollover at work
     if changeType & 16 == 16:
         # This only matters if we're at a place where we should track time
-        if trackLocation:
+        if trackCurrLocation:
             workclock.lapClock(currentLocation, currentTime, parser)
 
     # Handle time card submission
