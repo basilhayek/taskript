@@ -6,9 +6,6 @@ currentTime = datetime.now()
 parser = ConfigParser.SafeConfigParser()
 parser.read('taskript.ini')
 
-# TODO: P2: Finish handling work at the client site (add to timecard)
-# TODO: P2: Handle additional hours (work->home->work scenario)
-
 #
 # Main()
 #

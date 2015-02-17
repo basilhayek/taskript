@@ -20,7 +20,9 @@ def updateTracking(nextSubmit, parser):
             parser.set('Tracking.' + site,day,str(0))
 
 def trackHours(location, startWorkTime, numHours, parser):
-    parser.set('Tracking.' + location,startWorkTime.strftime("%A")[0:3], str(numHours))
+    dow = startWorkTime.strftime("%A")[0:3]
+    numHours = numHours + parser.getfloat('Tracking.' + location, dow)
+    parser.set('Tracking.' + location, dow, str(numHours))
     timecard.saveTimecard(startWorkTime, parser)
 
 def pingClock(location, currentTime, parser):
