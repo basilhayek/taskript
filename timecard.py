@@ -37,7 +37,7 @@ def writeLocationHours(rowNum, location, timecard, parser):
         timecardRow = timecardRow.replace('<' + day.upper() + '>', dayHours)
     timecardRow = timecardRow.replace("<PID>", "125474")
     timecardRow = timecardRow.replace("<ROW>", str(rowNum))
-    timecardRow = timecardRow.replace("<LOCATION>", parser.get("Location", "location." + location))
+    timecardRow = timecardRow.replace("<LOCATION>", parser.get("Timecard", "location." + location))
     timecard = timecard + timecardRow.replace("\\n","\n").replace("\\t","\t")
     return timecard
 
@@ -80,6 +80,6 @@ def submitTimecard(currentLocation, parser):
     timecardToClipboard(nextSubmit.strftime('%Y-%m-%d'))
    
     nextSubmit = nextSubmit + timedelta(days=7)
-    workclock.updateTracking(nextSubmit, parser)       
+    workclock.resetTracking(nextSubmit, parser)       
    
     webbrowser.open(timecardURL)
