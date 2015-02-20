@@ -1,7 +1,7 @@
 [Pytask]
-lastlocation = Work
-lastrun = 2015-02-18 22:45:31
-lastaction = startClock(Work)
+lastLocation = Work
+lastRun = 2015-02-18 22:45:31
+lastAction = startClock(Work)
 
 [Tracking]
 week = 2015-02-22
@@ -36,12 +36,12 @@ sun = 0
 10.59 = ClientRI
 127.0 = NoIP
 
-[Locationcategory]
-home = home
-officebos = work
-vpnbos = work
-clientri = client
-noip = unknown
+[LocationCategory]
+Home = home
+OfficeBOS = work
+VPNBOS = work
+ClientRI = client
+NoIP = unknown
 
 [Timecard]
 track.work = True
