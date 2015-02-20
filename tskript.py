@@ -5,9 +5,13 @@ Created on Thu Feb 12 20:51:54 2015
 @author: bhayek
 """
 
-import ConfigParser
 import socket
 from datetime import datetime
+import workclock
+import timecard
+
+def isTrackedLocation(location, parser):
+    return parser.getboolean('Location', 'Track.' + location)
 
 def getIPOctets(ipAddress, numOctets):
     if numOctets == 4:
@@ -18,56 +22,71 @@ def getIPOctets(ipAddress, numOctets):
     strAddress = ipAddress[0:posDot]
     return strAddress
 
+def locationChange(currentLocation, parser):
+    locChangeType = 0
+    lastLocation = parser.get('Pytask', 'lastLocation')
+    if (currentLocation != 'ignore') and (lastLocation != currentLocation):
+        locChangeType = 1
+        if isTrackedLocation(lastLocation, parser):
+            locChangeType = locChangeType | 2
+        if isTrackedLocation(currentLocation, parser):
+            locChangeType = locChangeType | 4
+    return locChangeType
+
+def dateChange(currentTime, parser):
+    dateChangeType = 0
+    lastTime = datetime.strptime(parser.get('Pytask', 'lastrun'),
+                                 "%Y-%m-%d %H:%M:%S")
+    if lastTime.date() != currentTime.date():
+        dateChangeType = 1
+        nextSubmit = datetime.strptime(parser.get('Tracking', 'week'),
+                                       '%Y-%m-%d')
+        if currentTime.date() > nextSubmit.date():
+            dateChangeType = dateChangeType | 2
+    return dateChangeType
+
+
+def handleContextChange(changeType, currentLocation, currentTime, parser):
+    # Handle location changes
+
+    lastLocation = parser.get("Pytask", "lastLocation")
+    trackCurrLocation = parser.getboolean("Location", "Track." + currentLocation)
+    trackLastLocation = parser.getboolean("Location", "Track." + lastLocation)
+    if changeType & 1 == 1:
+        # If we were tracking the last location, stop it
+        if trackLastLocation:
+            workclock.stopClock(lastLocation, parser)
+            
+        # If we are tracking the new location, start it
+        if trackCurrLocation:
+            workclock.startClock(currentLocation, currentTime, parser)
+
+    # Handle date rollover at work
+    if changeType & 16 == 16:
+        # This only matters if we're at a place where we should track time
+        if trackCurrLocation:
+            workclock.lapClock(currentLocation, currentTime, parser)
+
+    # Handle time card submission
+    if changeType & 32 == 32:
+        timecard.submitTimecard(currentLocation, parser)
+
+def contextChange(currentLocation, currentTime, parser):
+    changeType = locationChange(currentLocation, parser)
+    changeType = changeType | (dateChange(currentTime, parser) << 4)
+    parser.set('Pytask', 'lastAction', 'contextChange()=' + str(changeType))
+    return changeType
+
 def getCurrentLocation(parser):
     currentIP = socket.gethostbyname(socket.gethostname())
     matchIP = getIPOctets(currentIP, 2)
     currentLocation = parser.get('IPMapping',matchIP)
     return currentLocation
 
-class tscontext:
-    def __init__(self, config):
-        self.parser = ConfigParser.SafeConfigParser()
-        self.parser.optionxform = str
-        self.parser.read(config)
-        self._config = config
-        
-        self.curLoc = getCurrentLocation(self.parser)
-        self.curTim = datetime.now()
-
-        self._reload()
-        self.log("init()")
-        
-    def _debugset(self, lasLoc, lasTim, curLoc, curTim):
-        self.parser.set('Pytask', 'lastLocation', lasLoc)
-        self.parser.set('Pytask', 'lastRun', lasTim.strftime("%Y-%m-%d %H:%M:%S"))
-        self._reload()
-        self.curTim = curTim
-        self.curLoc = curLoc
-    
-    def _reload(self):
-        self.lasLoc = self.parser.get('Pytask','lastLocation')
-        self.lasTim = self.parser.get('Pytask','lastRun')
-    
-    def log(self, action):
-        print action
-        self.parser.set("Pytask", "lastaction", action)
-    
-    def getCategory(self, location):
-        return self.parser.get('LocationCategory', location)
-        
-    def _compareCategory(self, location, checkCategory):
-        category = self.getCategory(location)
-        return (category==checkCategory)
-
-    def wasCategory(self, checkCategory):
-        return self.compareCategory(self.lasLoc, checkCategory)
-        
-    def isCategory(self, checkCategory):
-        return self._compareCategory(self.curLoc, checkCategory)
-
-    def isLocationContextChange(self):
-        if self.isCategory('unknown'):
-            return False
-        else:
-            return (self.getCategory(self.curLoc) != 
-                    self.getCategory(self.lasLoc))
+def updateConfig(currentTime, currentLocation, parser):
+    strTime = currentTime.strftime("%Y-%m-%d %H:%M:%S")
+    parser.set('Pytask', 'lastRun', strTime)
+    parser.set('Pytask', 'lastLocation', currentLocation)
+    if isTrackedLocation(currentLocation, parser):
+        workclock.pingClock(currentLocation, currentTime, parser)
+    parser.write(open('taskript.ini', 'w'))

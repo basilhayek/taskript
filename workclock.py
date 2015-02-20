@@ -7,86 +7,44 @@ Created on Thu Feb 12 21:35:21 2015
 
 from datetime import datetime
 import timecard
-import workclock
 
-class ContextHandler(object):
-    def handleContext(self, context):
-        """
-        @type context: tscontext
-        @param context: a tscontext object
-        """
-        raise NotImplementedError
-        
-class ClockPunch(ContextHandler):
-    def __init__(self, parser):
-        self.parser = parser
+def updateTracking(nextSubmit, parser):
+    parser.set('Pytask','lastAction','updateTracking()')
+    parser.set('Tracking', 'week', nextSubmit.strftime('%Y-%m-%d'))
 
-    def isTrackedLocation(self, category):
-        return self.parser.getboolean('Timecard', 'Track.' + category)
-
-    def handleContext(self, context):
-        lasCat = context.getCategory(context.lasLoc)
-        curCat = context.getCategory(context.curLoc)
-        if context.isLocationContextChange():
-            if self.isTrackedLocation(lasCat):
-                context.log('stopClock(' + context.lasLoc + ":" + lasCat + ')')
-                self.stopClock(lasCat)
-            if self.isTrackedLocation(curCat):
-                context.log('startClock(' + context.curLoc + ":" + curCat + ')' + context.curTim.strftime("%Y-%m-%d %H:%M:%S"))
-                self.startClock(curCat, context.curTim)
-        elif self.isTrackedLocation(curCat):
-            context.log('pingClock(' + context.curLoc + ":" + curCat + ')' + context.curTim.strftime("%Y-%m-%d %H:%M:%S"))
-            self.pingClock(curCat, context.curTim)
-        else:
-            print "nada----"
-
-    def pingClock(self, location, currentTime):
-        self.parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
-    
-    def startClock(self, location, currentTime):
-        self.parser.set('Tracking.' + location, 'start', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
-        self.parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
-        self.parser.remove_option('Tracking.' + location, 'stop')
-    
-    def stopClock(self, location):
-        print "in stopClock(" + location + ")"
-        strTemp = self.parser.get('Tracking.' + location, 'last')
-        print "last" + strTemp
-        self.parser.set('Tracking.' + location, 'stop', strTemp)
-        stopWorkTime = datetime.strptime(strTemp, "%Y-%m-%d %H:%M:%S")
-        startWorkTime = datetime.strptime(self.parser.get('Tracking.' + location, 'start'),"%Y-%m-%d %H:%M:%S")
-        print "start" + str(startWorkTime)
-        dtDelta = stopWorkTime - startWorkTime   
-        numHours = round((2 * dtDelta.seconds / 60 / 60),0) / 2
-        trackHours(location, startWorkTime, numHours, self.parser)
-    
-    def lapClock(self, location, currentTime):
-        self.stopClock(location)
-        self.startClock(location, currentTime)
-
-    def resetTracking(self, nextSubmit):
-        self.parser.set('Pytask','lastAction','updateTracking()')
-        self.parser.set('Tracking', 'week', nextSubmit.strftime('%Y-%m-%d'))
-    
-        #TODO: P3 - Fix this to be dynamic
-        sites = ['Client','Work']    
-        for site in sites:
-            dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-            for day in dow:
-                self.parser.set('Tracking.' + site,day,str(0))
-
-    # Work -> Ignore -> Work: Keep clocking running
-    # Work -> Ignore -> Work-VPN: LapClock
-    # Work -> (OTHER) -> Ignore -> Work-VPN: LapClock
-    # Work -> (DRIVE) -> Ignore -> Client: LapClock
-    
-
+    #TODO: P3 - Fix this to be dynamic
+    sites = ['Client','Work']    
+    for site in sites:
+        dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        for day in dow:
+            parser.set('Tracking.' + site,day,str(0))
 
 def trackHours(location, startWorkTime, numHours, parser):
     dow = startWorkTime.strftime("%A")[0:3]
     numHours = numHours + parser.getfloat('Tracking.' + location, dow)
     parser.set('Tracking.' + location, dow, str(numHours))
-    print 'Tracking.' + location + dow + str(numHours)
     timecard.saveTimecard(startWorkTime, parser)
 
+def pingClock(location, currentTime, parser):
+    parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+
+def startClock(location, currentTime, parser):
+    parser.set('Pytask','lastAction','startClock(' + location + ')')
+    parser.set('Tracking.' + location, 'start', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+    parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
+    parser.remove_option('Tracking.' + location, 'stop')
+
+def stopClock(location, parser):
+    parser.set('Pytask','lastAction','stopClock()')
+    strTemp = parser.get('Tracking.' + location, 'last')
+    parser.set('Tracking.' + location, 'stop', strTemp)
+    stopWorkTime = datetime.strptime(strTemp, "%Y-%m-%d %H:%M:%S")
+    startWorkTime = datetime.strptime(parser.get('Tracking.' + location, 'start'),"%Y-%m-%d %H:%M:%S")
+    dtDelta = stopWorkTime - startWorkTime   
+    numHours = round((2 * dtDelta.seconds / 60 / 60),0) / 2
+    trackHours(location, startWorkTime, numHours, parser)
+
+def lapClock(location, currentTime, parser):
+    stopClock(location, parser)
+    startClock(location, currentTime, parser)
     
