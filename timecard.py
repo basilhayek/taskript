@@ -8,7 +8,6 @@ Created on Thu Feb 12 21:54:06 2015
 import Tkinter
 from datetime import datetime, timedelta
 import webbrowser
-import workclock
 
 def copyToClipboard(string):
     r = Tkinter.Tk()
@@ -74,12 +73,8 @@ def submitTimecard(currentLocation, parser):
     nextSubmit = datetime.strptime(parser.get('Tracking','week'), '%Y-%m-%d') 
 
     timecardURL = 'http://timetracking/upload.aspx'
-    if currentLocation == 'Home':
+    if (currentLocation == 'Home') and (currentLocation != 'NoIP'):
         timecardURL = 'https://us.webvpn.sapient.com/,DanaInfo=timetracking+Upload.aspx'
    
     timecardToClipboard(nextSubmit.strftime('%Y-%m-%d'))
-   
-    nextSubmit = nextSubmit + timedelta(days=7)
-    workclock.resetTracking(nextSubmit, parser)       
-   
     webbrowser.open(timecardURL)

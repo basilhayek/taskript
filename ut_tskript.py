@@ -24,7 +24,7 @@ class TestTskript(unittest.TestCase):
         curTim = datetime.now()
         del2Hours = timedelta(hours=-2)
         self.setLocTime("OfficeBOS", curTim + del2Hours, "Home", curTim)
-        self.assertTrue(self.tscontext.isCategory("home"))
+        self.assertTrue(self.tscontext.isCategory("Home"))
 
     def test_contextChangeW2H(self):
         curTim = datetime.now()
@@ -39,11 +39,22 @@ class TestTskript(unittest.TestCase):
         self.assertFalse(self.tscontext.isLocationContextChange())
 
     def test_dateChangeSameDate(self):
-        self.assertTrue(True)
+        houradj = int(self.tscontext.lasTim.hour / 2)
+        curTim = self.tscontext.lasTim + timedelta(hours=-houradj)
+        self.tscontext.curTim = curTim
+        self.assertFalse(self.tscontext.isDateContextChange())
 
     def test_dateChangeDiffDate(self):
-#        self.parser.set("Pytask","lastrun",lastTime.strftime("%Y-%m-%d %H:%M:%S"))
-         self.assertTrue(True)
+        curTim = self.tscontext.lasTim + timedelta(hours=36)
+        self.tscontext.curTim = curTim
+        self.assertTrue(self.tscontext.isDateContextChange())
+        self.assertTrue(True)
+
+    def test_weekChangeDiffWeek(self):
+        curTim = self.tscontext.lasTim + timedelta(days=8)
+        self.tscontext.curTim = curTim
+        self.assertTrue(self.tscontext.isWeekContextChange())
+
 
 #if __name__ == '__main__':
 #    unittest.main()
