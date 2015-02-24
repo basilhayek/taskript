@@ -36,6 +36,7 @@ class tscontext:
 
         self._reload()
         self.log("init()")
+        self.ping()
         
     def _debugset(self, lasLoc, lasTim, curLoc, curTim):
         self.parser.set('Pytask', 'lastLocation', lasLoc)
@@ -46,10 +47,17 @@ class tscontext:
     
     def _reload(self):
         self.lasLoc = self.parser.get('Pytask','lastLocation')
-        self.lasTim = self.parser.get('Pytask','lastRun')
+        self.lasTim = datetime.strptime(self.parser.get('Pytask','lastRun'),"%Y-%m-%d %H:%M:%S") 
+        
+    def ping(self):
+        self.parser.set('Pytask', 'lastLocation', self.curLoc)
+        self.parser.set('Pytask', 'lastRun', self.curTim.strftime("%Y-%m-%d %H:%M:%S"))
+        
+    def close(self):
+        self.parser.write(open(self._config, 'w'))
     
     def log(self, action):
-        print action
+#        print action
         self.parser.set("Pytask", "lastaction", action)
     
     def getCategory(self, location):
@@ -71,3 +79,12 @@ class tscontext:
         else:
             return (self.getCategory(self.curLoc) != 
                     self.getCategory(self.lasLoc))
+                    
+    def isDateContextChange(self):
+        return self.curTim.date() != self.lasTim.date()
+            
+    def isWeekContextChange(self):
+        nextSubmit = datetime.strptime(self.parser.get('Tracking', 'week'),
+                                       '%Y-%m-%d')
+        return self.curTim.date() > nextSubmit.date()
+        

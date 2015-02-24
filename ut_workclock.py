@@ -26,15 +26,26 @@ class TestWorkclock(unittest.TestCase):
         self.clock.resetTracking(timecard.getWeekEnding(curTim, 6))
         del2Hours = timedelta(hours=-2)
         self.setLocTime("Home", curTim + del2Hours + del2Hours, "OfficeBOS", curTim + del2Hours)
-        print "** Home -4 Work -2"
         self.clock.handleContext(self.tscontext)
         self.setLocTime("OfficeBOS", curTim + del2Hours, "OfficeBOS", curTim)
-        print "** Work -2 Work 0"
         self.clock.handleContext(self.tscontext)
         self.tscontext.curLoc = "Home"
-        print "** Home 0"
         self.clock.handleContext(self.tscontext)
         self.assertEquals(self.parser.get("Tracking.Work", "Thu"), "2.0")
+
+    def test_contextChangeW2V2H(self):
+        curTim = datetime.strptime("2015-02-19 08:00:05", "%Y-%m-%d %H:%M:%S")
+        self.clock.resetTracking(timecard.getWeekEnding(curTim, 6))
+        del2Hours = timedelta(hours=-2)
+        self.setLocTime("Home", curTim + (3 * del2Hours), "OfficeBOS", curTim + (2 * del2Hours))
+        self.clock.handleContext(self.tscontext)
+        self.setLocTime("OfficeBOS", curTim + (2 * del2Hours), "VPNBOS", curTim + del2Hours)
+        self.clock.handleContext(self.tscontext)
+        self.setLocTime("VPNBOS", curTim + del2Hours, "VPNBOS", curTim)
+        self.clock.handleContext(self.tscontext)
+        self.tscontext.curLoc = "Home"
+        self.clock.handleContext(self.tscontext)
+        self.assertEquals(self.parser.get("Tracking.Work", "Thu"), "4.0")
 
     def test_contextChangeW2Hm(self):
         curTim = datetime.strptime("2015-02-19 08:00:05", "%Y-%m-%d %H:%M:%S")

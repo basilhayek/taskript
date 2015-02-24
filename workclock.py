@@ -5,7 +5,7 @@ Created on Thu Feb 12 21:35:21 2015
 @author: bhayek
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import timecard
 import workclock
 
@@ -22,7 +22,7 @@ class ClockPunch(ContextHandler):
         self.parser = parser
 
     def isTrackedLocation(self, category):
-        return self.parser.getboolean('Timecard', 'Track.' + category)
+        return self.parser.getboolean('Timecard', 'track.' + category)
 
     def handleContext(self, context):
         lasCat = context.getCategory(context.lasLoc)
@@ -35,10 +35,25 @@ class ClockPunch(ContextHandler):
                 context.log('startClock(' + context.curLoc + ":" + curCat + ')' + context.curTim.strftime("%Y-%m-%d %H:%M:%S"))
                 self.startClock(curCat, context.curTim)
         elif self.isTrackedLocation(curCat):
-            context.log('pingClock(' + context.curLoc + ":" + curCat + ')' + context.curTim.strftime("%Y-%m-%d %H:%M:%S"))
-            self.pingClock(curCat, context.curTim)
+            if context.isDateContextChange():
+                # handle date rollover                
+                context.log('lapClock(' + context.lasLoc + ":" + lasCat + ')')
+                self.lapClock(curCat, context.curTim)
+            else:
+                context.log('pingClock(' + context.curLoc + ":" + curCat + ')' + context.curTim.strftime("%Y-%m-%d %H:%M:%S"))
+                self.pingClock(curCat, context.curTim)
         else:
             print "nada----"
+
+        # Handle submitting the timecard
+        if context.isWeekContextChange():
+            timecard.submitTimecard(context.curLoc, self.parser)            
+            nextSubmit = datetime.strptime(self.parser.get('Tracking','week'), '%Y-%m-%d')             
+            nextSubmit = nextSubmit + timedelta(days=7)
+            workclock.resetTracking(nextSubmit)       
+
+            
+            
 
     def pingClock(self, location, currentTime):
         self.parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
@@ -49,23 +64,20 @@ class ClockPunch(ContextHandler):
         self.parser.remove_option('Tracking.' + location, 'stop')
     
     def stopClock(self, location):
-        print "in stopClock(" + location + ")"
         strTemp = self.parser.get('Tracking.' + location, 'last')
-        print "last" + strTemp
         self.parser.set('Tracking.' + location, 'stop', strTemp)
         stopWorkTime = datetime.strptime(strTemp, "%Y-%m-%d %H:%M:%S")
         startWorkTime = datetime.strptime(self.parser.get('Tracking.' + location, 'start'),"%Y-%m-%d %H:%M:%S")
-        print "start" + str(startWorkTime)
         dtDelta = stopWorkTime - startWorkTime   
         numHours = round((2 * dtDelta.seconds / 60 / 60),0) / 2
-        trackHours(location, startWorkTime, numHours, self.parser)
+        self.trackHours(location, startWorkTime, numHours)
     
     def lapClock(self, location, currentTime):
         self.stopClock(location)
         self.startClock(location, currentTime)
 
     def resetTracking(self, nextSubmit):
-        self.parser.set('Pytask','lastAction','updateTracking()')
+        self.parser.set('Pytask','lastAction','resetTracking()')
         self.parser.set('Tracking', 'week', nextSubmit.strftime('%Y-%m-%d'))
     
         #TODO: P3 - Fix this to be dynamic
@@ -79,14 +91,11 @@ class ClockPunch(ContextHandler):
     # Work -> Ignore -> Work-VPN: LapClock
     # Work -> (OTHER) -> Ignore -> Work-VPN: LapClock
     # Work -> (DRIVE) -> Ignore -> Client: LapClock
-    
 
-
-def trackHours(location, startWorkTime, numHours, parser):
-    dow = startWorkTime.strftime("%A")[0:3]
-    numHours = numHours + parser.getfloat('Tracking.' + location, dow)
-    parser.set('Tracking.' + location, dow, str(numHours))
-    print 'Tracking.' + location + dow + str(numHours)
-    timecard.saveTimecard(startWorkTime, parser)
+    def trackHours(self, location, startWorkTime, numHours):
+        dow = startWorkTime.strftime("%A")[0:3]
+        numHours = numHours + self.parser.getfloat('Tracking.' + location, dow)
+        self.parser.set('Tracking.' + location, dow, str(numHours))
+        timecard.saveTimecard(startWorkTime, self.parser)
 
     
