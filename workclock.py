@@ -52,8 +52,10 @@ class ClockPunch(ContextHandler):
             nextSubmit = nextSubmit + timedelta(days=7)
             workclock.resetTracking(nextSubmit)       
 
-            
-            
+    def calcHours(self, startWorkTime, stopWorkTime):
+        dtDelta = stopWorkTime - startWorkTime   
+        numHours = round((2.0 * dtDelta.seconds / 60 / 60),0) / 2
+        return numHours            
 
     def pingClock(self, location, currentTime):
         self.parser.set('Tracking.' + location, 'last', currentTime.strftime("%Y-%m-%d %H:%M:%S"))
@@ -68,8 +70,7 @@ class ClockPunch(ContextHandler):
         self.parser.set('Tracking.' + location, 'stop', strTemp)
         stopWorkTime = datetime.strptime(strTemp, "%Y-%m-%d %H:%M:%S")
         startWorkTime = datetime.strptime(self.parser.get('Tracking.' + location, 'start'),"%Y-%m-%d %H:%M:%S")
-        dtDelta = stopWorkTime - startWorkTime   
-        numHours = round((2 * dtDelta.seconds / 60 / 60),0) / 2
+        numHours = self.calcHours(startWorkTime, stopWorkTime)
         self.trackHours(location, startWorkTime, numHours)
     
     def lapClock(self, location, currentTime):
@@ -77,6 +78,7 @@ class ClockPunch(ContextHandler):
         self.startClock(location, currentTime)
 
     def resetTracking(self, nextSubmit):
+# TODO: P3 - Change this to use the log function
         self.parser.set('Pytask','lastAction','resetTracking()')
         self.parser.set('Tracking', 'week', nextSubmit.strftime('%Y-%m-%d'))
     

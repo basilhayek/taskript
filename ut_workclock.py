@@ -68,12 +68,37 @@ class TestWorkclock(unittest.TestCase):
         self.clock.stopClock("Work")
         self.assertEquals(self.parser.get("Tracking.Work", "Thu"), "4.0")
 
-    def test_dateChangeSameDate(self):
-        self.assertTrue(True)
+    def test_OneHour_Exact(self):
+        strStart = "2015-02-25 20:29:48"
+        strStop = "2015-02-25 21:29:48"
+        numHours = 1
+        stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
+        startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
+        self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
 
-    def test_dateChangeDiffDate(self):
-#        self.parser.set("Pytask","lastrun",lastTime.strftime("%Y-%m-%d %H:%M:%S"))
-         self.assertTrue(True)
+    def test_TwoHour_JustUnder(self):
+        strStart = "2015-02-25 20:29:48"
+        strStop = "2015-02-25 22:29:54"
+        numHours = 2
+        stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
+        startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
+        self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
+
+    def test_TwoHour_WayUnder(self):
+        strStart = "2015-02-25 20:00:00"
+        strStop = "2015-02-25 21:45:30"
+        numHours = 2
+        stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
+        startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
+        self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
+
+    def test_HalfHour_JustOver(self):
+        strStart = "2015-02-25 20:00:00"
+        strStop = "2015-02-25 20:35:30"
+        numHours = 0.5
+        stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
+        startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
+        self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestWorkclock)
 unittest.TextTestRunner(verbosity=2).run(suite)

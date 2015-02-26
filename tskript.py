@@ -58,7 +58,7 @@ class tscontext:
     
     def log(self, action):
 #        print action
-        self.parser.set("Pytask", "lastaction", action)
+        self.parser.set("Pytask", "lastAction", action)
     
     def getCategory(self, location):
         return self.parser.get('LocationCategory', location)
