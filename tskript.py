@@ -9,6 +9,8 @@ import ConfigParser
 import socket
 from datetime import datetime
 
+# TODO: P2: Refactor INI file to separate tskript vs activity
+
 def getIPOctets(ipAddress, numOctets):
     if numOctets == 4:
         return ipAddress
@@ -88,3 +90,4 @@ class tscontext:
                                        '%Y-%m-%d')
         return self.curTim.date() > nextSubmit.date()
         
+# TODO: P3: Add additional contexts (Month, Hour)
