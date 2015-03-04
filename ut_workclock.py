@@ -99,6 +99,14 @@ class TestWorkclock(unittest.TestCase):
         stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
         startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
         self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
+        
+    def test_HalfHour_RoundsUp(self):
+        strStart = "2015-03-02 08:24:48"
+        strStop = "2015-03-02 19:43:16"
+        numHours = 11.0
+        stopWorkTime = datetime.strptime(strStop, "%Y-%m-%d %H:%M:%S")
+        startWorkTime = datetime.strptime(strStart, "%Y-%m-%d %H:%M:%S")
+        self.assertEquals(self.clock.calcHours(startWorkTime, stopWorkTime), numHours)
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestWorkclock)
 unittest.TextTestRunner(verbosity=2).run(suite)
