@@ -7,7 +7,6 @@ Created on Thu Feb 12 21:35:21 2015
 
 from datetime import datetime, timedelta
 import timecard
-import workclock
 
 class ContextHandler(object):
     def handleContext(self, context):
@@ -50,7 +49,7 @@ class ClockPunch(ContextHandler):
             timecard.submitTimecard(context.curLoc, self.parser)            
             nextSubmit = datetime.strptime(self.parser.get('Tracking','week'), '%Y-%m-%d')             
             nextSubmit = nextSubmit + timedelta(days=7)
-            workclock.resetTracking(nextSubmit)       
+            self.resetTracking(nextSubmit)       
 
     def calcHours(self, startWorkTime, stopWorkTime):
         dtDelta = stopWorkTime - startWorkTime   
@@ -88,11 +87,6 @@ class ClockPunch(ContextHandler):
             dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
             for day in dow:
                 self.parser.set('Tracking.' + site,day,str(0))
-
-    # Work -> Ignore -> Work: Keep clocking running
-    # Work -> Ignore -> Work-VPN: LapClock
-    # Work -> (OTHER) -> Ignore -> Work-VPN: LapClock
-    # Work -> (DRIVE) -> Ignore -> Client: LapClock
 
     def trackHours(self, location, startWorkTime, numHours):
         dow = startWorkTime.strftime("%A")[0:3]
