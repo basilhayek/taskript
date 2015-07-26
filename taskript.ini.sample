@@ -1,0 +1,58 @@
+[Pytask]
+lastLocation = Home
+lastRun = 2015-07-26 07:29:48
+lastAction = init()
+
+[Tracking]
+week = 2015-07-26
+
+[Tracking.Client]
+start = 2015-03-06 10:14:48
+last = 2015-03-06 11:59:48
+Mon = 0
+Tue = 0
+Wed = 0
+Thu = 0
+Fri = 0
+Sat = 0
+Sun = 0
+stop = 2015-03-06 11:59:48
+
+[Tracking.Work]
+start = 2015-07-23 11:19:48
+last = 2015-07-23 17:44:48
+Mon = 9.5
+Tue = 11.0
+Wed = 9.5
+Thu = 9.0
+Fri = 8.0
+Sat = 0
+Sun = 0
+stop = 2015-07-23 17:44:48
+
+[IPMapping]
+192.168 = Home
+10.221 = OfficeBOS
+10.222 = VPNBOS
+10.59 = ClientNYC
+10.160 = ClientBOS
+127.0 = NoIP
+
+[LocationCategory]
+Home = Home
+OfficeBOS = WorkLocal
+VPNBOS = WorkLocal
+ClientNYC = WorkNYC
+ClientBOS = WorkLocal
+NoIP = Unknown
+
+[Timecard]
+track.WorkLocal = True
+track.WorkNYC = True
+track.Home = False
+track.Unknown = False
+location.WorkNYC = Rhode Island
+location.WorkLocal = Massachusetts
+row.hours = <ROW>\tHours\t<PID>\tBILLABLE\tProject Work\t<LOCATION>\t\t<MON>\t<TUE>\t<WED>\t<THU>\t<FRI>\t<SAT>\t<SUN>\t\t\t\n\tComments\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n
+row.blank = <ROW>\tHours\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n\tComments\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n
+
