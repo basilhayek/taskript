@@ -9,6 +9,12 @@ from datetime import datetime, timedelta
 import tskript
 import unittest
 
+# from geoip import geolite2
+# import win_inet_pton
+# import socket
+
+import urllib, json
+
 class TestTskript(unittest.TestCase):
    
     def setUp(self):
@@ -54,6 +60,16 @@ class TestTskript(unittest.TestCase):
         curTim = self.tscontext.lasTim + timedelta(days=8)
         self.tscontext.curTim = curTim
         self.assertTrue(self.tscontext.isWeekContextChange())
+		
+#    def test_geolite2_locateme(self):
+#        match = geolite2.lookup_mine()
+#        print match
+
+    def test_hostip_locateme(self):
+        data = json.loads(urllib.urlopen("http://api.hostip.info/get_json.php").read())
+        print data["ip"]
+        print data["city"]
+
 
 
 #if __name__ == '__main__':
