@@ -60,3 +60,4 @@ target/
 # Data
 Data/*.txt
 *.bak
+*.ini
